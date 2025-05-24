@@ -42,6 +42,7 @@ A comprehensive collection of helper classes to accelerate Unity C# project deve
 | [**SaveSystemHelper**](./Contents/SaveSystemHelper/)    | Binary and JSON save/load of game data                |
 | [**SceneHelper**](./Contents/SceneHelper/)         | Async scene loading/unloading with progress callbacks |
 | [**TimeHelper**](./Contents/TimeHelper/)          | Time formatting, countdowns, and timers               |
+| [**TutorialHelper**](./Contents/TutorialHelper/)          |tutorial sequences and steps with actions               |
 | [**UIHelper**](./Contents/UIHelper/)            | Common UI utilities: layout, widgets, dialogs         |
 
 ---
