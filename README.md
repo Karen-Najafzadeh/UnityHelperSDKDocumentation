@@ -29,6 +29,7 @@ A comprehensive collection of helper classes to accelerate Unity C# project deve
 | [**DebugHelper**](./Contents/DebugHelper/)         | In-game debug console, logs, and profiling UI         |
 | [**DialogueHelper**](./Contents/DialogueHelper/)      | Dialogue trees, branching, and UI integration         |
 | [**EditorGUIHelper**](./Contents/EditorGUIHelper/)     | Custom Editor windows, inspectors, and menu items     |
+| [**EventHelper**](./Contents/EventHelper//)     | A static helper class meant to ease the dirty works for you     |
 | [**FirestoreHelper**](./Contents/FirestoreHelper/)     | Firestore CRUD operations with Unity integration      |
 | [**InputHelper**](./Contents/InputHelper/)         | Unified input abstraction (touch, keyboard, gamepad)  |
 | [**JsonHelper**](./Contents/JsonHelper/)          | Advanced JSON: serialize, diff, merge, Firestore      |
