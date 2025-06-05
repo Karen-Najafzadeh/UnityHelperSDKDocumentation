@@ -4,28 +4,28 @@ Below is a complete breakdown of **DamagePopupHelper**—a static utility class 
 
 ## Table of Contents
 
-1. [Overview & Purpose](#overview--purpose)
-2. [Internal Constants & Fields](#internal-constants--fields)
-3. [Initialization](#initialization)
+1. [Overview & Purpose](#1-overview--purpose)
+2. [Internal Constants & Fields](#2-internal-constants--fields)
+3. [Initialization](#3-initialization)
 
    * 3.1. `Initialize()`
    * 3.2. `CreateDamagePopupPrefab()`
-4. [Displaying a Single Damage or Heal Number](#displaying-a-single-damage-or-heal-number)
+4. [Displaying a Single Damage or Heal Number](#4-displaying-a-single-damage-or-heal-number)
 
    * 4.1. `ShowDamage(...)`
-5. [Displaying Combo Hits](#displaying-combo-hits)
+5. [Displaying Combo Hits](#5-displaying-combo-hits)
 
    * 5.1. `ShowCombo(...)`
-6. [Billboard Component](#billboard-component)
-7. [Putting It All Together: Real-World Usage](#putting-it-all-together-real-world-usage)
+6. [Billboard Component](#6-billboard-component)
+7. [Putting It All Together: Real-World Usage](#7-putting-it-all-together-real-world-usage)
 
    * 7.1. Bootstrapping at Game Start
    * 7.2. Showing Damage in Combat Scripts
    * 7.3. Healing Popups
    * 7.4. Critical Hits & Color Coding
    * 7.5. Combo Attacks
-8. [Customization & Tips](#customization--tips)
-9. [Summary of Public API](#summary-of-public-api)
+8. [Customization & Tips](#8-customization--tips)
+9. [Summary of Public API](#9-summary-of-public-api)
 
 ---
 

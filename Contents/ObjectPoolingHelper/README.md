@@ -29,19 +29,19 @@ Below, each region of the code is explained in detail, followed by copy‐and‐
 
 ## Table of Contents
 
-1. [Overall Structure](#overall-structure)
-2. [Data Structures & Fields](#data-structures--fields)
-3. [Public API: Pool Management](#public-api-pool-management)
-   3.1. [`InitializePoolAsync(string poolKey, GameObject prefab, PoolSettings settings = null)`](#initializepoolasyncstring-poolkey-gameobject-prefab-poolsettings-settings--null)
-   3.2. [`InitializePoolFromBundleAsync(string poolKey, string bundleName, string prefabName, PoolSettings settings = null)`](#initializepoolfrombundleasyncstring-poolkey-string-bundlename-string-prefabname-poolsettings-settings--null)
-   3.3. [`Get(string poolKey, Vector3 position = default, Quaternion rotation = default)`](#getstring-poolkey-vector3-position--default-quaternion-rotation--default)
-   3.4. [`Return(GameObject obj)`](#returngameobject-obj)
-   3.5. [`PreWarmAsync(string poolKey, int count)`](#prewarmasyncstring-poolkey-int-count)
-4. [Public API: Pool Information](#public-api-pool-information)
-   4.1. [`GetPoolStats(string poolKey)`](#getpoolstatsstring-poolkey)
-   4.2. [`ClearPool(string poolKey)`](#clearpoolstring-poolkey)
-   4.3. [`ClearAllPools()`](#clearallpools)
-5. [Internal Class: `ObjectPool`](#internal-class-objectpool)
+1. [Overall Structure](#1-overall-structure)
+2. [Data Structures & Fields](#2-data-structures--fields)
+3. [Public API: Pool Management](#3-public-api-pool-management)
+   3.1. [`InitializePoolAsync(string poolKey, GameObject prefab, PoolSettings settings = null)`](#31-initializepoolasyncstring-poolkey-gameobject-prefab-poolsettings-settings--null)
+   3.2. [`InitializePoolFromBundleAsync(string poolKey, string bundleName, string prefabName, PoolSettings settings = null)`](#32-initializepoolfrombundleasyncstring-poolkey-string-bundlename-string-prefabname-poolsettings-settings--null)
+   3.3. [`Get(string poolKey, Vector3 position = default, Quaternion rotation = default)`](#33-getstring-poolkey-vector3-position--default-quaternion-rotation--default)
+   3.4. [`Return(GameObject obj)`](#34-returngameobject-obj)
+   3.5. [`PreWarmAsync(string poolKey, int count)`](#35-prewarmasyncstring-poolkey-int-count)
+4. [Public API: Pool Information](#4-public-api-pool-information)
+   4.1. [`GetPoolStats(string poolKey)`](#41-getpoolstatsstring-poolkey)
+   4.2. [`ClearPool(string poolKey)`](#42-clearpoolstring-poolkey)
+   4.3. [`ClearAllPools()`](#43-clearallpools)
+5. [Internal Class: `ObjectPool`](#5-internal-class-objectpool)
    5.1. **Fields & Properties**
    5.2. **Constructor**
    5.3. **`InitializeAsync()` and `ExpandAsync(int count)`**
@@ -49,19 +49,19 @@ Below, each region of the code is explained in detail, followed by copy‐and‐
    5.5. **`Return(GameObject obj)`**
    5.6. **`Clear()`**
    5.7. **`CreateNewObject()`**
-6. [Helper Classes & Structs](#helper-classes--structs)
+6. [Helper Classes & Structs](#6-helper-classes--structs)
    6.1. **`PoolSettings`**
    6.2. **`PoolStats`**
    6.3. **`PoolableObject`**
-7. [Real‐World Usage Examples](#real-world-usage-examples)
+7. [Real‐World Usage Examples](#7-realworld-usage-examples)
    7.1. Bootstrap & Initialize a Simple Pool
    7.2. Fetching & Returning Objects at Runtime
    7.3. Pre‐Warming a Pool in Advance
    7.4. Loading a Prefab from an AssetBundle into a Pool
    7.5. Querying Pool Statistics for Debugging
    7.6. Clearing Pools on Level Unload
-8. [Customization & Tips](#customization--tips)
-9. [Summary of Public API](#summary-of-public-api)
+8. [Customization & Tips](#8-customization--tips)
+9. [Summary of Public API](#9-summary-of-public-api)
 
 ---
 

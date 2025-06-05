@@ -4,33 +4,33 @@ Below is a comprehensive breakdown of **CoroutineHelper**—a static class that 
 
 ## Table of Contents
 
-1. [Overall Architecture](#overall-architecture)
-2. [Initialization](#initialization)
-3. [Coroutine Management](#coroutine-management)
+1. [Overall Architecture](#1-overall-architecture)
+2. [Initialization](#2-initialization)
+3. [Coroutine Management](#3-coroutine-management)
 
    * 3.1. `StartManagedCoroutine`
    * 3.2. `StopCoroutineWithId`
    * 3.3. `StopAllCoroutines`
-4. [Task Integration](#task-integration)
+4. [Task Integration](#4-task-integration)
 
    * 4.1. `ToCoroutine(Task)`
    * 4.2. `ToCoroutine<T>(Task<T>, Action<T>)`
-5. [Sequence Management](#sequence-management)
+5. [Sequence Management](#5-sequence-management)
 
    * 5.1. `Sequence(params IEnumerator[])`
    * 5.2. `Parallel(params IEnumerator[])`
-6. [Error Handling](#error-handling)
+6. [Error Handling](#6-error-handling)
 
    * 6.1. `WrapWithErrorHandler`
-7. [CoroutineRunner (MonoBehaviour)](#coroutinerunner-monobehaviour)
-8. [Real‐World Usage Examples](#real-world-usage-examples)
+7. [CoroutineRunner (MonoBehaviour)](#7-coroutinerunner-monobehaviour)
+8. [Real‐World Usage Examples](#8-realworld-usage-examples)
 
    * 8.1. Managing a Repeating Coroutine with Cancellation
    * 8.2. Converting a `Task` to a Coroutine for Asynchronous File I/O
    * 8.3. Running Game Logic in Sequence and in Parallel
    * 8.4. Handling Errors Gracefully in Coroutines
    * 8.5. Stopping Everything on Scene Unload
-9. [Best Practices & Tips](#best-practices--tips)
+9. [Best Practices & Tips](#9-best-practices--tips)
 
 ---
 
