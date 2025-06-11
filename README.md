@@ -74,6 +74,19 @@ A comprehensive collection of helper classes to accelerate Unity C# project deve
 | [**TutorialHelper**](./Contents/TutorialHelper/)          | Tutorial sequences and steps with actions             |
 | [**UIHelper**](./Contents/UIHelper/)                      | Common UI utilities: layout, widgets, dialogs         |
 
+
+## DesignPattern Helpers
+
+| DesighnPattern                                                          | Description
+| ---------------------------                                             | -----------------------------------------------------                             |
+| [**Factory Pattern**](./Contents/DesignPatternHelpers/FactoryPattern/)  | a generic factory pattern with **object pooling** support for GameObjects         |
+| [**Observer Pattern**](./Contents/DesignPatternHelpers/ObserverPattern/)| an observer/event system abstraction                                              |
+| [**State Pattern**](./Contents/DesignPatternHelpers/StatePattern/)      | A robust and helpful implementation to help using state pattern faster and simpler|
+| [**Strategy Pattern**](./Contents/DesignPatternHelpers/StrategyPattern/)| Useing this helper is a greate strategy to implement strategy pattern             |
+| Extra helpers                                                           |
+| [**State Machine**](./Contents/DesignPatternHelpers/StateMachine/)      | A generic state machine system to do the dirty works for you                      |
+
+
 ## 🛠️ Usage Examples
 
 ```csharp
