@@ -44,33 +44,34 @@ A comprehensive collection of helper classes to accelerate Unity C# project deve
 
 ## 📦 Included Helpers
 
-| Helper                       | Description                                           |
-| ---------------------------- | ----------------------------------------------------- |
-| [**AnimationHelper**](./Contents/AnimationHelper/)     | Animation event callbacks and cross-fades             |
-| [**AssetBundleHelper**](./Contents/AssetBundleHelper/)   | AssetBundle loading, caching, and version management  |
-| [**AudioHelper**](./Contents/AudioHelper/)         | Audio pooling, mixing, and volume controls            |
-| [**CameraHelper**](./Contents/CameraHelper/)        | Camera shakes, follow, and cinematic effects          |
-| [**CoroutineHelper**](./Contents/CoroutineHelper/)     | Enhanced coroutine management and scheduling          |
-| [**DamagePopupHelper**](./Contents/DamagePopupHelper/)   | Floating text and damage indicators                   |
-| [**DebugHelper**](./Contents/DebugHelper/)         | In-game debug console, logs, and profiling UI         |
-| [**DialogueHelper**](./Contents/DialogueHelper/)      | Dialogue trees, branching, and UI integration         |
-| [**EditorGUIHelper**](./Contents/EditorGUIHelper/)     | Custom Editor windows, inspectors, and menu items     |
-| [**EventHelper**](./Contents/EventHelper/)     | Global event system for decoupled communication     |
-| [**FirestoreHelper**](./Contents/FirestoreHelper/)     | Firestore CRUD operations with Unity integration      |
-| [**InputHelper**](./Contents/InputHelper/)         | Unified input abstraction (touch, keyboard, gamepad)  |
-| [**JsonHelper**](./Contents/JsonHelper/)          | Advanced JSON: serialize, diff, merge, Firestore      |
+| Helper                                                    | Description                                           |
+| ----------------------------                              | ----------------------------------------------------- |
+| [**AnimationHelper**](./Contents/AnimationHelper/)        | Animation event callbacks and cross-fades             |
+| [**AssetBundleHelper**](./Contents/AssetBundleHelper/)    | AssetBundle loading, caching, and version management  |
+| [**AudioHelper**](./Contents/AudioHelper/)                | Audio pooling, mixing, and volume controls            |
+| [**CameraHelper**](./Contents/CameraHelper/)              | Camera shakes, follow, and cinematic effects          |
+| [**CoroutineHelper**](./Contents/CoroutineHelper/)        | Enhanced coroutine management and scheduling          |
+| [**DamagePopupHelper**](./Contents/DamagePopupHelper/)    | Floating text and damage indicators                   |
+| [**DebugHelper**](./Contents/DebugHelper/)                | In-game debug console, logs, and profiling UI         |
+| [**DialogueHelper**](./Contents/DialogueHelper/)          | Dialogue trees, branching, and UI integration         |
+| [**EditorGUIHelper**](./Contents/EditorGUIHelper/)        | Custom Editor windows, inspectors, and menu items     |
+| [**EventHelper**](./Contents/EventHelper/)                | Global event system for decoupled communication       |
+| [**FirestoreHelper**](./Contents/FirestoreHelper/)        | Firestore CRUD operations with Unity integration      |
+| [**InputHelper**](./Contents/InputHelper/)                | Unified input abstraction (touch, keyboard, gamepad)  |
+| [**JsonHelper**](./Contents/JsonHelper/)                  | Advanced JSON: serialize, diff, merge, Firestore      |
 | [**LocalizationHelper**](./Contents/LocalizationHelper/)  | Multi-language support, string tables, culture switch |
 | [**LocalStorageHelper**](./Contents/LocalStorageHelper/)  | File-based local storage for persistent data          |
-| [**NavigationHelper**](./Contents/NavigationHelper/)    | NavMeshAgent controllers and waypoint navigation      |
-| [**NetworkHelper**](./Contents/NetworkHelper/)       | REST and WebSocket client utilities                   |
-| [**ObjectPoolingHelper**](./Contents/ObjectPoolingHelper/) | Generic pooling for GameObjects and components        |
-| [**ParticleHelper**](./Contents/ParticleHelper/)      | Particle system pooling, play/stop controls           |
-| [**PrefsHelper**](./Contents/PrefsHelper/)         | Typed PlayerPrefs with cloud sync and JSON support    |
-| [**SaveSystemHelper**](./Contents/SaveSystemHelper/)    | Binary and JSON save/load of game data                |
-| [**SceneHelper**](./Contents/SceneHelper/)         | Async scene loading/unloading with progress callbacks |
-| [**TimeHelper**](./Contents/TimeHelper/)          | Time formatting, countdowns, and timers               |
-| [**TutorialHelper**](./Contents/TutorialHelper/)      | Tutorial sequences and steps with actions             |
-| [**UIHelper**](./Contents/UIHelper/)            | Common UI utilities: layout, widgets, dialogs         |
+| [**NavigationHelper**](./Contents/NavigationHelper/)      | NavMeshAgent controllers and waypoint navigation      |
+| [**NetworkHelper**](./Contents/NetworkHelper/)            | REST and WebSocket client utilities                   |
+| [**ObjectPoolingHelper**](./Contents/ObjectPoolingHelper/)| Generic pooling for GameObjects and components        |
+| [**ParticleHelper**](./Contents/ParticleHelper/)          | Particle system pooling, play/stop controls           |
+| [**PrefsHelper**](./Contents/PrefsHelper/)                | Typed PlayerPrefs with cloud sync and JSON support    |
+| [**SaveSystemHelper**](./Contents/SaveSystemHelper/)      | Binary and JSON save/load of game data                |
+| [**SceneHelper**](./Contents/SceneHelper/)                | Async scene loading/unloading with progress callbacks |
+| [**SuperScrollRect**](./Contents/SuperScrollRect/)        | infinite scroll with recycling functionallity         |
+| [**TimeHelper**](./Contents/TimeHelper/)                  | Time formatting, countdowns, and timers               |
+| [**TutorialHelper**](./Contents/TutorialHelper/)          | Tutorial sequences and steps with actions             |
+| [**UIHelper**](./Contents/UIHelper/)                      | Common UI utilities: layout, widgets, dialogs         |
 
 ## 🛠️ Usage Examples
 
