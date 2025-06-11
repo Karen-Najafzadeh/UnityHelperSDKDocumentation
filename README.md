@@ -57,6 +57,7 @@ A comprehensive collection of helper classes to accelerate Unity C# project deve
 | [**EditorGUIHelper**](./Contents/EditorGUIHelper/)        | Custom Editor windows, inspectors, and menu items     |
 | [**EventHelper**](./Contents/EventHelper/)                | Global event system for decoupled communication       |
 | [**FirestoreHelper**](./Contents/FirestoreHelper/)        | Firestore CRUD operations with Unity integration      |
+| [**IAPHelper**](./Contents/IAPHelper/)                    | IAP helper that does all the dirty works for you      |
 | [**InputHelper**](./Contents/InputHelper/)                | Unified input abstraction (touch, keyboard, gamepad)  |
 | [**JsonHelper**](./Contents/JsonHelper/)                  | Advanced JSON: serialize, diff, merge, Firestore      |
 | [**LocalizationHelper**](./Contents/LocalizationHelper/)  | Multi-language support, string tables, culture switch |
