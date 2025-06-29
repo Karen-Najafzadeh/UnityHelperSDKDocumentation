@@ -1,459 +1,249 @@
-Here’s a comprehensive guide to the UnityHelperSDK tutorial system, covering its architecture, data formats, core classes, and how to define and run your own tutorials.
-
----
+# UnityHelperSDK Tutorial System Documentation
 
 ## Overview
 
-The UnityHelperSDK tutorial system is a **data‑driven**, **event‑based** engine for orchestrating multi‑step tutorials with branching, conditional logic, persistence, and analytics. You:
+The UnityHelperSDK Tutorial System is a modular, extensible framework for creating, managing, and displaying interactive tutorials in Unity games. It supports complex, multi-step tutorials with branching logic, custom conditions, analytics, and seamless integration with both runtime and editor workflows.
 
-1. **Define** tutorials (and their categories) in JSON/ScriptableObjects.
-2. **Load** definitions at runtime via `TutorialRepository`.
-3. **Register** sequences with `TutorialHelper`.
-4. **Start** tutorials by ID, letting the engine step through each `TutorialStep` as conditions are met.
-5. **Track** progress in `PlayerPrefs` (so each tutorial can “only show once” if desired).
-6. **Emit** events (`TutorialEvents`) for UI, logic hooks, and analytics.
-
-All communication is decoupled via an `EventHelper` pub/sub layer.
+This documentation explains the architecture, main components, and how to use the system in your own project.
 
 ---
 
-## 1. Data Structures
+## Architecture & Main Components
 
-### 1.1. TutorialConditionData
+### 1. **ScriptableObject Data Model**
+- **TutorialDefinition**: Stores all data for a single tutorial (ID, category, steps, conditions, etc.).
+- **TutorialCategory**: Groups tutorials into categories for organization and filtering.
+- **TutorialStepData**: Represents a single step in a tutorial, including its conditions and target objects.
+- **TutorialConditionData**: Serializable data for conditions (event ID, type, parameters).
 
-```csharp
-[Serializable]
-public class TutorialConditionData
-{
-    public string            EventId;        // identifier for the condition callback
-    public TutorialConditionType ConditionType;// Start, Step, or Custom
-    public string[]          Parameters;     // optional args (thresholds, keys, etc.)
-}
-```
+These ScriptableObjects are stored in `Assets/Resources/Tutorials` and can be created/edited via the Unity Editor.
 
-### 1.2. TutorialConditionType
+### 2. **Runtime Classes**
+- **TutorialRepository**: Singleton MonoBehaviour that loads, manages, and tracks all tutorials, categories, and progress. Handles persistence and acts as the main data source.
+- **TutorialSequence**: Represents a sequence of steps for a tutorial, including start conditions and logic for activation/completion.
+- **TutorialStep**: Represents a single step, with its own conditions and completion logic.
+- **TutorialHelper**: Static class that manages the flow of tutorials, step progression, UI integration, and event handling.
+- **TutorialEvents**: Defines all event structs used for communication between tutorial components (start, complete, step, analytics, etc.).
 
-```csharp
-public enum TutorialConditionType
-{
-    Start,   // gate tutorial start
-    Step,    // gate progression within a step
-    Custom   // user‑defined logic
-}
-```
-
-### 1.3. TutorialData & Related
-
-Defined inside `TutorialRepository`:
-
-```csharp
-[Serializable] public class TutorialData {
-  public string                     Id;
-  public string                     CategoryId;
-  public string                     Title, Description;
-  public bool                       OnlyShowOnce;
-  public int                        RequiredLevel;
-  public List<string>               Dependencies;
-  public List<TutorialConditionData> StartConditions;
-  public List<TutorialStepData>     Steps;
-}
-
-[Serializable] public class TutorialStepData {
-  public string                     Id, DialogueKey;
-  public GameObject                 TargetObject;
-  public List<TutorialConditionData> Conditions;
-  public TutorialConditionData      CompletionCondition;
-}
-
-[Serializable] public class TutorialCategoryData {
-  public string Id, Name, Description;
-  public int    Order;
-}
-```
+### 3. **Editor Tools**
+- **TutorialEditorWindow**: Custom Unity Editor window for managing tutorials and categories visually.
+- **TutorialTreeView**: UIElements-based tree view for browsing and selecting tutorials/categories in the editor.
 
 ---
 
-## 2. Event Types (`TutorialEvents`)
+## How the System Works
 
-All tutorial logic and UI hook into these structs via `EventHelper.Subscribe` / `Trigger`:
+### 1. **Data Definition (ScriptableObjects)**
+- Create `TutorialCategory` and `TutorialDefinition` assets in `Assets/Resources/Tutorials`.
+- Each `TutorialDefinition` contains:
+  - Unique ID, category, title, description
+  - List of dependencies (other tutorials that must be completed first)
+  - List of start conditions (when the tutorial should be available)
+  - List of steps (`TutorialStepData`), each with its own conditions and completion logic
 
-| Event                            | Data                                                             |
-| -------------------------------- | ---------------------------------------------------------------- |
-| **TutorialStartConditionEvent**  | TutorialId, PlayerLevel → sets `HasMetConditions`                |
-| **TutorialStepConditionEvent**   | TutorialId, StepId, TargetObject → sets `HasMetConditions`       |
-| **TutorialStartedEvent**         | TutorialId, CategoryId, RequiredLevel                            |
-| **TutorialCompletedEvent**       | TutorialId, CategoryId, TimeSpent, WasSkipped                    |
-| **TutorialStepStartedEvent**     | TutorialId, StepId, DialogueKey, TargetObject                    |
-| **TutorialStepCompletedEvent**   | TutorialId, StepId, TimeSpent, WasSkipped                        |
-| **CustomTutorialConditionEvent** | ConditionId, Parameters → sets `HasMetCondition`                 |
-| **TutorialAnalyticsEvent**       | TutorialId, EventType, StepId, Duration, Success, AdditionalData |
+### 2. **Initialization**
+- On game start, `TutorialRepository.Instance` is created (singleton pattern).
+- It loads all categories and definitions from resources, builds runtime data structures, and loads player progress.
+- `TutorialHelper.Initialize()` can be called to set up the tutorial system and register available tutorials.
 
-Use these to update your UI (highlights, arrows, dialogue pop‑ups) or tie into game logic/telemetry.
+### 3. **Starting a Tutorial**
+- Tutorials can be started manually (e.g., `await TutorialHelper.StartTutorial("tutorial_id")`) or automatically if their start conditions are met.
+- Start conditions are checked using event-driven logic (see `TutorialEvents.TutorialStartConditionEvent`).
+- If a tutorial is set to `OnlyShowOnce`, it will not be shown again after completion.
+
+### 4. **Step Progression**
+- Each tutorial consists of ordered steps (`TutorialStep`).
+- Each step can have multiple conditions (e.g., player actions, reaching a location, etc.).
+- The system waits for all conditions to be met before progressing to the next step.
+- Completion of a step can also be gated by custom logic or events.
+
+### 5. **UI Integration**
+- The system supports highlighting UI elements, showing dialogue, and displaying arrows or overlays to guide the player.
+- UI references (canvas, prefabs) are managed by `TutorialHelper`.
+- Animations and delays can be configured for a smooth user experience.
+
+### 6. **Analytics & Events**
+- All major tutorial events (start, complete, step, analytics) are triggered via `TutorialEvents`.
+- You can subscribe to these events for custom analytics, logging, or additional game logic.
+
+### 7. **Persistence**
+- Player progress (completed tutorials, current step, etc.) is saved and loaded automatically by `TutorialRepository`.
+- Supports JSON serialization for easy integration with cloud save or external systems.
+
+### 8. **Editor Workflow**
+- Use the `Tutorial Editor` window (menu: Unity Helper SDK/Tutorial Editor) to:
+  - Create, edit, and organize tutorials and categories
+  - Edit steps, conditions, and dependencies visually
+  - Save changes directly to ScriptableObject assets
 
 ---
 
-## 3. Core Runtime
+## How to Use the Tutorial System in Your Project
 
-### 3.1. TutorialHelper
+### 1. **Setup**
+- Import all scripts and editor tools from the `HelperUtilities/TutorialUtilities` folders.
+- Ensure Newtonsoft.Json is available in your project (for serialization).
 
-A static engine that:
+### 2. **Create Categories and Tutorials**
+- In the Unity Editor, open the `Tutorial Editor` window.
+- Create new categories and tutorials as needed.
+- Define steps, conditions, and assign target objects for each step.
 
-* Holds all registered `TutorialSequence` instances.
-* Manages the active tutorial, current step index, and looping through steps.
-* Exposes:
+### 3. **Initialize at Runtime**
+- Call `TutorialHelper.Initialize()` at game startup (e.g., in a bootstrap script or main menu).
+- Optionally, register additional tutorials or subscribe to tutorial events for custom logic.
 
+### 4. **Start Tutorials**
+- To start a tutorial manually:
   ```csharp
-  Task Initialize();                    // subscribe to core events
-  void    RegisterTutorial(sequence);  // called by Repository
-  Task    StartTutorial(tutorialId);   // kicks off the flow
+  await TutorialHelper.StartTutorial("tutorial_id");
   ```
-* Internally:
+- Tutorials can also start automatically if their start conditions are met (e.g., player reaches a certain level).
 
-  * Checks start conditions: `sequence.CheckStartConditions()`
-  * Recursively calls `ProcessNextStep()`, waiting for each step’s conditions and completion.
-  * Fires analytics and start/complete events.
+### 5. **Custom Conditions and Events**
+- Define custom conditions by extending the event system or using `CustomTutorialCondition`.
+- Subscribe to `TutorialEvents` for analytics, UI updates, or other game logic.
 
-### 3.2. TutorialSequence
-
-Encapsulates one tutorial flow:
-
-* **Meta**: `Id`, `CategoryId`, `OnlyShowOnce`, `RequiredLevel`.
-* **Start conditions**: list of callbacks invoked on a `TutorialStartConditionEvent`.
-* **Steps**: `List<TutorialStep>`.
-* **Lifecycle**:
-
-  * `CheckStartConditions()`
-  * `Start()`: timestamp + analytics + `Trigger(TutorialStartedEvent)`
-  * `Complete()`: analytics + `Trigger(TutorialCompletedEvent)` + notify `TutorialRepository`.
-
-### 3.3. TutorialStep
-
-Represents a single step within a sequence:
-
-* **Properties**: `Id`, `DialogueKey`, `Target` GameObject.
-* **Condition callbacks** (list) → invoked against `TutorialStepConditionEvent`.
-* **Completion callback** → invoked similarly; when met, fires `TutorialStepCompletedEvent`.
-* **Cleanup**: unsubscribes all handlers once the step is done.
+### 6. **Persistence and Progress**
+- Progress is saved automatically, but you can call `TutorialRepository.Instance.SaveProgress()` to force a save.
+- To reset progress (for testing), clear the saved data or use a debug command.
 
 ---
 
-## 4. Data Loading & Persistence
+## Examples
 
-All definitions live in JSON under `Resources/Tutorials/`:
+### Example 1: Creating a Simple Tutorial
 
-* **tutorial\_definitions.json** → `Dictionary<string, TutorialData>`
-* **tutorial\_categories.json** → `Dictionary<string, TutorialCategoryData>`
+1. **Create a Category**
+   - In the editor, create a new `TutorialCategory` asset (e.g., "Onboarding").
 
-`TutorialRepository` on **Awake**:
+2. **Create a Tutorial**
+   - Create a new `TutorialDefinition` asset.
+   - Set its ID, category, title, and description.
+   - Add start conditions (e.g., player level >= 1).
+   - Add steps, each with a dialogue key, target object, and conditions (e.g., click a button).
 
-1. **Load definitions** (`JsonHelper.Deserialize` from TextAssets).
-2. **Create sequences** via `CreateTutorialSequence(...)`.
-3. **Load progress** (`PlayerPrefs["CompletedTutorials"]`) into a `HashSet<string>`.
+3. **Initialize and Start**
+   - In your game startup code:
+     ```csharp
+     TutorialHelper.Initialize();
+     await TutorialHelper.StartTutorial("onboarding_tutorial");
+     ```
 
-When a tutorial completes, `CompleteTutorial(id)`:
+### Example 2: Assigning Target Objects at Runtime
 
-* Adds to `CompletedTutorials`, `SaveProgress()`, triggers analytics, and fires `OnTutorialCompleted` event.
-
----
-
-## 5. Using the System
-
-### 5.1. Setup
-
-1. **Add** a `TutorialRepository` to your startup scene (or rely on its singleton‑creation).
-2. **Ensure** `TutorialHelper.Initialize()` is called on game launch (e.g., in an async awakening manager).
-
-### 5.2. Defining a Tutorial (JSON Example)
-
-```jsonc
-{
-  "move-character": {
-    "Id":           "move-character",
-    "CategoryId":   "movement",
-    "Title":        "Moving Around",
-    "Description":  "Learn how to move your character.",
-    "OnlyShowOnce": true,
-    "RequiredLevel":1,
-    "Dependencies": [],
-    "StartConditions":[
-      { "EventId":"game-loaded", "ConditionType":"Start", "Parameters": [] }
-    ],
-    "Steps":[
-      {
-        "Id":"step-1",
-        "DialogueKey":"movement_intro",
-        "TargetObject":"PlayerCharacter",
-        "Conditions":[
-          { "EventId":"input-detected", "ConditionType":"Step", "Parameters":["Horizontal"] }
-        ],
-        "CompletionCondition":
-          { "EventId":"distance-moved", "ConditionType":"Custom", "Parameters":["5"] }
-      }
-    ]
-  }
-}
-```
-
-> **Tip**: For `TargetObject`, you can store the name or lookup via `GameObject.Find`.
-
-### 5.3. Starting a Tutorial
-
-From your game logic:
+Sometimes, you may want to assign or override the target GameObject for a tutorial step at runtime (for example, if the UI is dynamically generated). You can do this by accessing the `TutorialStep` instance after the tutorial is loaded or before starting it:
 
 ```csharp
-// Ensure repo is initialized
-await TutorialRepository.Instance.StartTutorial("move-character");
+// After TutorialHelper.Initialize() and before starting the tutorial
+var tutorial = TutorialRepository.Instance.ActiveSequences["onboarding_tutorial"];
+var step = tutorial.Steps[0]; // e.g., first step
+step.Target = GameObject.Find("DynamicButton"); // Assign the actual GameObject
 ```
 
-* Checks category, required level, dependencies, and “only show once” logic.
-* Triggers `TutorialStartedEvent` → begins the engine loop.
+If you need to assign targets dynamically for all steps, you can loop through them and set the `Target` property as needed.
 
-### 5.4. Custom Conditions
+> **Note:** If you are using ScriptableObjects for tutorial definitions, the `TargetObject` field in `TutorialStepData` can be left empty and set at runtime as above.
 
-To define bespoke logic (e.g. “player health > 50%”):
+### Example 3: Creating Tutorials at Runtime
 
-1. **Subscribe** your own handler to `TutorialEvents.CustomTutorialConditionEvent`.
-2. **Check** `evt.ConditionId` and `evt.Parameters`; set `evt.HasMetCondition` accordingly.
+You can create and register new tutorials at runtime if your game requires dynamic tutorials (e.g., for user-generated content or A/B testing):
 
 ```csharp
-EventHelper.Subscribe<TutorialEvents.CustomTutorialConditionEvent>(evt => {
-  if (evt.ConditionId == "health-check") {
-    float threshold = float.Parse(evt.Parameters[0].ToString());
-    evt.HasMetCondition = Player.Instance.Health >= threshold;
-  }
+// Create a new TutorialSequence
+var sequence = new TutorialSequence(
+    id: "dynamic_tutorial",
+    onlyShowOnce: false,
+    requiredLevel: 0,
+    categoryId: "dynamic"
+);
+
+// Create steps
+var step1 = new TutorialStep("step1", "Welcome!", GameObject.Find("StartButton"));
+step1.AddCondition(evt => { evt.HasMetConditions = true; }); // Always true for demo
+sequence.AddStep(step1);
+
+// Register the tutorial
+TutorialHelper.RegisterTutorial(sequence);
+
+// Start it
+await TutorialHelper.StartTutorial("dynamic_tutorial");
+```
+
+You can add as many steps and conditions as needed. This approach is useful for procedural or context-sensitive tutorials.
+
+### Example 4: Subscribing to Tutorial Events
+
+You can listen for tutorial events to trigger custom logic, analytics, or UI updates:
+
+```csharp
+// Subscribe to tutorial started event
+EventHelper.Subscribe<TutorialEvents.TutorialStartedEvent>(evt => {
+    Debug.Log($"Tutorial started: {evt.TutorialId}");
+});
+
+// Subscribe to step completed event
+EventHelper.Subscribe<TutorialEvents.TutorialStepCompletedEvent>(evt => {
+    Debug.Log($"Step completed: {evt.StepId}");
 });
 ```
 
-Then in JSON use `"ConditionType":"Custom"` with `"EventId":"health-check"`.
-
 ---
 
-## 6. Listening & UI Integration
+## FAQ & Advanced Usage
 
-Hook UI elements into events:
+### Q: How do I make a step wait for a specific player action?
+A: Add a condition to the step that sets `evt.HasMetConditions = true` when the action occurs. For example, subscribe to a button click and update the event:
 
 ```csharp
-EventHelper.Subscribe<TutorialEvents.TutorialStepStartedEvent>(evt => {
-  // Display dialogue for evt.DialogueKey
-  DialogueUI.Show(evt.DialogueKey);
-  // Highlight evt.TargetObject with highlightPrefab
-  HighlightManager.Highlight(evt.TargetObject, highlightColor);
+step.AddCondition(evt => {
+    MyButton.onClick.AddListener(() => evt.HasMetConditions = true);
 });
 ```
 
-Similarly, on `TutorialStepCompletedEvent`, remove highlights or show “Next” buttons.
+### Q: Can I change the dialogue or step content at runtime?
+A: Yes. You can modify the `DialogueKey` or any other property of a `TutorialStep` before the step is shown.
+
+### Q: How do I reset or replay a tutorial?
+A: Remove the tutorial ID from `TutorialRepository.Instance.CompletedTutorials` and call `StartTutorial` again. For a full reset, clear all progress data.
+
+### Q: Can I add steps to an existing tutorial at runtime?
+A: Yes. Access the `TutorialSequence` and use `AddStep()` to append new steps before starting or while paused.
 
 ---
 
-## 7. API Quick Reference
-
-| Class                  | Key Methods/Props                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| **TutorialHelper**     | `Initialize()`, `RegisterTutorial()`, `StartTutorial(id)`                                             |
-| **TutorialRepository** | `StartTutorial(id)`, `CompleteTutorial(id)`, `IsTutorialCompleted(id)`, `GetTutorialsByCategory(cat)` |
-| **TutorialSequence**   | `CheckStartConditions()`, `Start()`, `Complete()`                                                     |
-| **TutorialStep**       | `AddCondition()`, `SetCompletionCondition()`, `CheckConditions()`, `CheckCompletionCondition()`       |
-| **EventHelper**        | `Subscribe<T>(handler)`, `Unsubscribe(handler)`, `Trigger(evt)`                                       |
+## Best Practices
+- Use categories to organize tutorials for scalability.
+- Keep step conditions simple and use custom conditions for complex logic.
+- Use analytics events to track player progress and improve onboarding.
+- Test tutorials thoroughly using the editor tools and runtime event logs.
+- Assign target objects at runtime if your UI is dynamic or instantiated at runtime.
+- For localization, use the `DialogueKey` to fetch localized strings.
 
 ---
 
-### That’s it!
+## Summary Table
 
-With these building blocks, you can author rich, condition‑driven tutorials entirely via data definitions, plug in custom logic, and keep your game code decoupled from tutorial flow.
-
----
-
-OK, Let's walk through **practical examples** of how to **integrate the `EventHelper` and `IChainedEvent` system into a Unity tutorial system**. These examples will reflect **real tutorial steps** such as showing messages, waiting for input, UI highlighting, and triggering gameplay actions.
-
----
-
-## 🧩 Quick Setup Recap
-
-Assume:
-
-* You have a `TutorialManager` MonoBehaviour that runs tutorials.
-* You're using `UIEvent`, `DialogueEvent`, `WaitForKeyEvent`, `HighlightButtonEvent`, etc. as we’ve defined before.
-* You call `EventHelper.ProcessEvents()` in a `MonoBehaviour.Update()` method somewhere in your game (like `TutorialManager` or a central GameManager).
+| Component                | Purpose                                                      |
+|--------------------------|--------------------------------------------------------------|
+| TutorialDefinition       | Stores all data for a single tutorial                        |
+| TutorialCategory         | Groups tutorials for organization                            |
+| TutorialStepData         | Represents a single step in a tutorial                       |
+| TutorialConditionData    | Serializable data for conditions                             |
+| TutorialRepository       | Loads, manages, and tracks all tutorials and progress        |
+| TutorialSequence         | Represents a sequence of steps for a tutorial                |
+| TutorialStep             | Represents a single step, with its own logic                 |
+| TutorialHelper           | Manages flow, UI, and event handling                         |
+| TutorialEvents           | Defines all event structs for communication                  |
+| TutorialEditorWindow     | Editor window for managing tutorials and categories           |
+| TutorialTreeView         | UIElements-based tree view for browsing tutorials/categories |
 
 ---
 
-## 🧪 **Example 1: Simple Step-by-Step Tutorial**
-
-### Step Flow:
-
-1. Show dialogue "Welcome!"
-2. Wait for player to press **Enter**
-3. Highlight the **Jump** button
-4. Wait until the player jumps
-5. Show "Good job!"
-
-```csharp
-public void StartSimpleTutorial()
-{
-    var welcome = new DialogueEvent("Welcome!", dialogueUI, this);
-    var waitEnter = new WaitForKeyEvent(KeyCode.Return, this);
-    var highlightJump = new HighlightButtonEvent(jumpButton, this);
-    var waitJump = new WaitUntilEvent(() => player.HasJumped, this);
-    var done = new DialogueEvent("Good job!", dialogueUI, this);
-
-    // Chain steps
-    welcome.NextEvent = waitEnter;
-    waitEnter.NextEvent = highlightJump;
-    highlightJump.NextEvent = waitJump;
-    waitJump.NextEvent = done;
-
-    EventHelper.TriggerChainedEvent(welcome);
-}
-```
+## References
+- All scripts are located in `Assets/Scripts/HelperUtilities/TutorialUtilities` and `Assets/Editor/TutorialUtilities`.
+- See the provided C# files for implementation details and extension points.
 
 ---
 
-## 🔀 **Example 2: Branching Based on Player Choice**
-
-Use `WaitUntilEvent` with conditional logic to branch tutorial paths.
-
-```csharp
-public void StartChoiceTutorial()
-{
-    var askChoice = new DialogueEvent("Choose your path: [A]ttack or [D]efend", dialogueUI, this);
-    var waitInput = new WaitUntilEvent(() => Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D), this);
-
-    var attackStep = new DialogueEvent("You chose to attack!", dialogueUI, this);
-    var defendStep = new DialogueEvent("You chose to defend!", dialogueUI, this);
-
-    askChoice.NextEvent = waitInput;
-
-    waitInput.NextEvent = Input.GetKeyDown(KeyCode.A) ? attackStep : defendStep;
-
-    EventHelper.TriggerChainedEvent(askChoice);
-}
-```
-
-> ✅ **Note:** If you want dynamic branching, you can override `.ProcessEvent()` in a custom event to pick `NextEvent` manually based on conditions at runtime.
-
----
-
-## 📜 **Example 3: Modular Tutorials Using ScriptableObjects or Data**
-
-Define tutorial steps as reusable assets, each step corresponding to a serialized `TutorialStep`:
-
-```csharp
-[CreateAssetMenu(menuName = "Tutorial/Step")]
-public class TutorialStep : ScriptableObject
-{
-    public string message;
-    public KeyCode keyToPress;
-}
-```
-
-Then dynamically build the event chain:
-
-```csharp
-public void RunSteps(TutorialStep[] steps)
-{
-    IChainedEvent previous = null;
-
-    foreach (var step in steps)
-    {
-        var dialogue = new DialogueEvent(step.message, dialogueUI, this);
-        var wait = new WaitForKeyEvent(step.keyToPress, this);
-
-        dialogue.NextEvent = wait;
-
-        if (previous == null)
-            EventHelper.TriggerChainedEvent(dialogue);
-        else
-            previous.NextEvent = dialogue;
-
-        previous = wait;
-    }
-}
-```
-
----
-
-## 🎯 **Example 4: Triggering Events During Gameplay**
-
-Imagine your tutorial requires the player to reach a specific area:
-
-```csharp
-public class WaitForZoneEnterEvent : UIEvent
-{
-    private readonly Transform _player;
-    private readonly Collider _zone;
-
-    public WaitForZoneEnterEvent(Transform player, Collider zone, MonoBehaviour runner = null)
-        : base(runner)
-    {
-        _player = player;
-        _zone = zone;
-    }
-
-    public override IEnumerator ProcessEvent()
-    {
-        while (!_zone.bounds.Contains(_player.position))
-            yield return null;
-        Complete();
-    }
-}
-```
-
-### Usage:
-
-```csharp
-var reachZone = new WaitForZoneEnterEvent(player.transform, tutorialZone, this);
-var message = new DialogueEvent("You reached the safe zone!", dialogueUI, this);
-
-reachZone.NextEvent = message;
-
-EventHelper.TriggerChainedEvent(reachZone);
-```
-
----
-
-## 🧠 **Advanced: TutorialManager with EventHandlerComponent**
-
-To manage auto-unsubscribing listeners, use `EventHandlerComponent`:
-
-```csharp
-public class TutorialManager : MonoBehaviour, IEventHandler
-{
-    private EventHandlerComponent _eventHandler;
-
-    private void Awake()
-    {
-        _eventHandler = gameObject.AddComponent<EventHandlerComponent>();
-    }
-
-    private void OnEnable()
-    {
-        _eventHandler.AddHandler<TutorialStepCompleted>(OnTutorialStepCompleted);
-    }
-
-    private void OnTutorialStepCompleted(TutorialStepCompleted step)
-    {
-        Debug.Log($"Step complete: {step.name}");
-    }
-
-    public void OnEventCleanup()
-    {
-        Debug.Log("TutorialManager cleaned up");
-    }
-}
-```
-
----
-
-## Summary: What You Can Build With This
-
-* ✅ Text-based guided onboarding
-* ✅ Interactive tutorials with button highlights
-* ✅ Conditional logic (choices, branching)
-* ✅ Visual effects (camera, animation, etc.)
-* ✅ Modular tutorials via ScriptableObjects
-* ✅ Auto-cleanup to avoid leaks or stale listeners
-
----
-
-Happy coding!
-
+For further questions or advanced usage, refer to the code comments or contact the SDK maintainers.
