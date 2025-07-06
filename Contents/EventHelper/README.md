@@ -1,405 +1,211 @@
-Here’s a complete guide to the UnityHelperSDK **event helper** system—covering its design, core classes, data flows, and how to integrate it into your Unity projects.
+
+# UnityHelperSDK Event System
+
+A modern, designer-friendly, and scalable event system for Unity, built on ScriptableObject-based events and categories. This system enables robust event-driven workflows, advanced editor tooling, and flexible data payloads for both programmers and designers.
+
+---
+
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Event System Architecture](#event-system-architecture)
+- [Getting Started](#getting-started)
+- [Creating Events & Categories](#creating-events--categories)
+- [Triggering Events](#triggering-events)
+- [Listening to Events](#listening-to-events)
+- [Passing Data with Events](#passing-data-with-events)
+- [Advanced Usage](#advanced-usage)
+- [Best Practices](#best-practices)
+- [FAQ](#faq)
 
 ---
 
 ## Overview
 
-The **EventHelper** subsystem provides a **type‑safe**, **thread‑safe**, **priority‑driven**, and **lifecycle‑aware** pub/sub framework for Unity, with support for:
-
-* **Strong typing**: events are value‑type structs (no string keys).
-* **Automatic cleanup**: handlers tied to objects or scopes are removed when those objects are destroyed.
-* **Prioritized dispatch**: `EventPriority` controls ordering.
-* **Coroutine support**: handlers can run as coroutines.
-* **Chained events**: sequences of `IChainedEvent` processed in order.
-* **Scoped subscriptions**: subscribe/unsubscribe all handlers for a given `MonoBehaviour`.
-
-All subscriptions go through a single static `EventHelper` class; `EventHandlerComponent` adds Unity‑lifecycle convenience on MonoBehaviours.
+This event system replaces traditional C# event patterns with asset-based, ScriptableObject-driven events and categories. It is optimized for both code and designer workflows, supporting advanced filtering, tagging, and metadata.
 
 ---
 
-## 1. Core Data Types
+## Key Features
+- **ScriptableObject-based Events**: Events are assets, not structs or enums.
+- **Categories**: Organize events with rich metadata (color, icon, tags, description).
+- **Designer-Friendly**: Create, edit, and manage events/categories in the Unity Editor.
+- **Advanced Editor Tools**: Bulk operations, filtering, search, and details panel.
+- **Flexible Data Payloads**: Events can carry arbitrary data fields.
+- **Runtime & Editor Support**: Trigger and listen to events in both play mode and edit mode.
 
-### 1.1. EventPriority
+---
+
+## Event System Architecture
+
+- **EventAsset**: ScriptableObject representing a single event, with metadata and data fields.
+- **CategoryAsset**: ScriptableObject representing a category for grouping events.
+- **EventDatabase**: ScriptableObject holding all events and categories for easy management.
+- **EventDispatcher**: Central static dispatcher for raising and listening to events.
+- **EventListener**: MonoBehaviour for listening to events and invoking UnityEvents.
+- **EventManagerWindow**: Editor window for managing events and categories.
+
+---
+
+## Getting Started
+
+1. **Import the Event System**: Add the `EventsUtilities` folder to your project.
+2. **Create an Event Database**: In the Unity Editor, go to `Tools > UnityHelperSDK > Event Manager` and click "Create Event Database" if one does not exist.
+3. **Open the Event Manager**: Use the Event Manager window to create and manage events and categories.
+
+---
+
+## Creating Events & Categories
+
+### Creating an Event
+1. Open the Event Manager window (`Tools > UnityHelperSDK > Event Manager`).
+2. In the **Events** tab, click **Add New Event**.
+3. Fill in the event name, description, category, color, icon, and tags.
+4. (Optional) Add data fields for custom payloads.
+
+**Example 1: Simple Event**
+- Name: `OnGameStarted`
+- Description: "Fired when the game starts."
+- Category: `System`
+
+**Example 2: Event with Data**
+- Name: `OnPlayerHealthChanged`
+- Data Fields: `currentHealth` (float), `maxHealth` (float), `damage` (float)
+
+### Creating a Category
+1. In the **Categories** tab, click **Add New Category**.
+2. Set the category name, color, icon, description, and tags.
+3. Assign events to this category as needed.
+
+**Example 1: System Category**
+- Name: `System`
+- Color: Blue
+- Description: "System-level events."
+
+**Example 2: Player Category**
+- Name: `Player`
+- Color: Green
+- Description: "Player-related events."
+
+---
+
+## Triggering Events
+
+You can trigger events from code using the static `EventDispatcher.Raise` or `EventHelper.Trigger` methods.
 
 ```csharp
-public enum EventPriority
-{
-    Critical = 0,
-    High     = 1,
-    Normal   = 2,
-    Low      = 3,
-    Background = 4
+// Example 1: Trigger a simple event
+public EventAsset onGameStartedEvent;
+
+void Start() {
+    EventDispatcher.Raise(onGameStartedEvent);
 }
-```
 
-Lower numeric values execute **earlier**.
-
----
-
-### 1.2. Handler Wrappers
-
-* **EventHandlerWrapperBase**
-
-  * Holds metadata: `Priority`, `IsCoroutine`, `CoroutineRunner`, `Tag`.
-  * Abstract members: `Type EventType`, `Delegate Handler`.
-
-* **EventHandlerWrapper<T>**
-
-  * Wraps an `Action<T>` delegate and exposes its `EventType` and `Handler`.
-
----
-
-### 1.3. Chained Events
-
-* **IChainedEvent**
-
-  ```csharp
-  interface IChainedEvent {
-    IEnumerator ProcessEvent();
-    bool IsComplete { get; }
-    bool HasError    { get; }
-    Exception Error  { get; }
-    IChainedEvent NextEvent { get; set; }
-  }
-  ```
-* **UIEvent**: base implementation for coroutine‑driven UI actions. You derive it and implement `ProcessEvent()`; it sets `IsComplete` when done.
-* **EventCompletionTracker**: tracks pending `IChainedEvent`s, moves them to completed when `IsComplete` is true, captures any errors, and can clear or report them.
-
----
-
-## 2. EventHelper Static API
-
-### 2.1. Subscribe / Unsubscribe
-
-```csharp
-// Basic subscription:
-EventHelper.Subscribe<MyEvent>(handler, priority, isCoroutine, coroutineRunner, tag);
-
-// Scoped subscription:
-EventHelper.SubscribeScoped<MyEvent>(myMonoBehaviour, handler, priority, isCoroutine, tag);
-
-// Unsubscribe a specific handler:
-EventHelper.Unsubscribe<MyEvent>(handler);
-
-// Unsubscribe all for a MonoBehaviour scope:
-EventHelper.UnsubscribeScope(myMonoBehaviour);
-```
-
-* **`T`** must be a `struct` (value‑type event data).
-* `isCoroutine=true` runs the handler inside a Unity coroutine on `coroutineRunner`.
-* `tag` is arbitrary metadata you can use for grouping or filtering.
-
-### 2.2. Trigger
-
-```csharp
-EventHelper.Trigger(new MyEvent { /* fill fields */ });
-```
-
-* Takes a copy of the handler list under lock, then executes in **priority order**.
-* Exceptions within handlers are caught and logged.
-
----
-
-### 2.3. Chained Events & Processing
-
-```csharp
-// Enqueue a chain starting point:
-EventHelper.TriggerChainedEvent(firstChainedEvent);
-
-// In a MonoBehaviour.Update():
-EventHelper.ProcessEvents();
-```
-
-* Chained: when one `IChainedEvent` completes, its `NextEvent` is enqueued.
-* The `EventCompletionTracker` updates to remove completed events and tracks errors.
-
----
-
-## 3. MonoBehaviour Integration
-
-### 3.1. EventHandlerComponent
-
-Attach to any `GameObject` to automatically:
-
-* **Subscribe** handlers via `AddHandler<T>(handler)`.
-* **Unsubscribe** all tracked handlers on `OnDestroy()`.
-* **Notify** any `IEventHandler` components to run custom cleanup.
-
-```csharp
-public class MyListener : MonoBehaviour
-{
-    private EventHandlerComponent _ehc;
-
-    void Awake() {
-      _ehc = gameObject.AddComponent<EventHandlerComponent>();
-      _ehc.AddHandler<MyEvent>(OnMyEvent);
-    }
-
-    void OnMyEvent(MyEvent e) {
-      // handle…
-    }
-}
-```
-
-When the GameObject is destroyed, all its subscriptions are cleaned up automatically.
-
----
-
-## 4. Putting It All Together
-
-1. **Define your event type**:
-
-   ```csharp
-   public struct PlayerDamagedEvent
-   {
-     public int DamageAmount;
-     public GameObject Target;
-   }
-   ```
-2. **Subscribe** early (e.g. in `Awake`):
-
-   ```csharp
-   EventHelper.Subscribe<PlayerDamagedEvent>(OnDamaged, EventPriority.High, isCoroutine: false);
-   ```
-
-   Or within a scope:
-
-   ```csharp
-   _ehc.AddHandler<PlayerDamagedEvent>(OnDamaged);
-   ```
-3. **Trigger** when appropriate:
-
-   ```csharp
-   EventHelper.Trigger(new PlayerDamagedEvent { DamageAmount = 10, Target = playerObj });
-   ```
-4. **Process chained UI events** if you’re using them:
-
-   ```csharp
-   EventHelper.TriggerChainedEvent(myChainedUIEvent);
-   // …in your Update:
-   EventHelper.ProcessEvents();
-   ```
-5. **Unsubscribe** (if needed manually):
-
-   ```csharp
-   EventHelper.Unsubscribe<PlayerDamagedEvent>(OnDamaged);
-   // or for all tied to a MonoBehaviour:
-   EventHelper.UnsubscribeScope(this);
-   ```
-
----
-
-## 5. API Quick Reference
-
-| Call                                     | Description                                |
-| ---------------------------------------- | ------------------------------------------ |
-| `Subscribe<T>(handler, priority,…)`      | Register an event handler                  |
-| `SubscribeScoped<T>(scope, handler,…)`   | Register tied to `scope`, auto‑cleanup     |
-| `Trigger<T>(eventData)`                  | Fire an event                              |
-| `Unsubscribe<T>(handler)`                | Remove a specific handler                  |
-| `UnsubscribeScope(object scope)`         | Remove *all* handlers for that `scope`     |
-| `TriggerChainedEvent(IChainedEvent evt)` | Enqueue a coroutine‑style chained event    |
-| `ProcessEvents()`                        | Advance chained events; call in `Update()` |
-
----
-
-With this framework, you get a robust, maintainable event system—no magic strings, full Unity‑lifecycle integration, and fine control over execution order and scope. 
-
----
-
-Here are two concrete examples of custom `IChainedEvent` implementations and how you’d wire them up and process them in your game.
-
----
-
-## 1. A Simple UI Fade‑In → Delay → Fade‑Out Sequence
-
-```csharp
-using System.Collections;
-using UnityEngine;
-using UnityHelperSDK;
-
-public class UIFadeEvent : UIEvent
-{
-    private readonly CanvasGroup _canvasGroup;
-    private readonly float _duration;
-
-    public UIFadeEvent(CanvasGroup canvasGroup, float duration, MonoBehaviour runner = null)
-        : base(runner)
-    {
-        _canvasGroup = canvasGroup;
-        _duration = duration;
-    }
-
-    public override IEnumerator ProcessEvent()
-    {
-        // Fade in
-        float elapsed = 0f;
-        while (elapsed < _duration)
-        {
-            _canvasGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / _duration);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-        _canvasGroup.alpha = 1f;
-
-        Complete();
-    }
-}
-```
-
-```csharp
-// In some MonoBehaviour that kicks off the sequence:
-public class TutorialUIController : MonoBehaviour
-{
-    [SerializeField] private CanvasGroup _tooltipGroup;
-
-    private void Start()
-    {
-        // Create fade‑in, wait‑for‑seconds, then fade‑out
-        var fadeIn  = new UIFadeEvent(_tooltipGroup, 0.5f, this);
-        var wait    = new WaitEvent(2f, this);          // defined below
-        var fadeOut = new UIFadeEvent(_tooltipGroup, 0.5f, this);
-
-        // Chain them
-        fadeIn.NextEvent  = wait;
-        wait.NextEvent    = fadeOut;
-
-        // Enqueue the first
-        EventHelper.TriggerChainedEvent(fadeIn);
-    }
-
-    private void Update()
-    {
-        EventHelper.ProcessEvents();
-    }
-}
-```
-
-```csharp
-// A tiny “wait” event you can reuse
-public class WaitEvent : UIEvent
-{
-    private readonly float _seconds;
-    private float _startTime;
-
-    public WaitEvent(float seconds, MonoBehaviour runner = null) 
-        : base(runner)
-    {
-        _seconds = seconds;
-    }
-
-    public override IEnumerator ProcessEvent()
-    {
-        _startTime = Time.time;
-        while (Time.time - _startTime < _seconds)
-            yield return null;
-        Complete();
-    }
+// Example 2: Trigger an event with data
+public EventAsset onPlayerHealthChangedEvent;
+
+void TakeDamage(float damage) {
+    onPlayerHealthChangedEvent.SetValue("damage", damage);
+    onPlayerHealthChangedEvent.SetValue("currentHealth", currentHealth);
+    onPlayerHealthChangedEvent.SetValue("maxHealth", maxHealth);
+    EventDispatcher.Raise(onPlayerHealthChangedEvent);
 }
 ```
 
 ---
 
-## 2. Dialogue → Highlight → Input‑Check Chain
+## Listening to Events
 
-Imagine you want to show a dialogue box, then highlight a UI button, then wait for the player to click it.
+You can listen to events in two main ways:
 
+### 1. Using the `EventListener` MonoBehaviour
+Attach the `EventListener` component to a GameObject and assign the `EventAsset` and a UnityEvent response.
+
+**Example 1: Listen for a simple event**
+- Add `EventListener` to a GameObject.
+- Assign `onGameStartedEvent`.
+- Add a UnityEvent response in the Inspector.
+
+**Example 2: Listen for an event in code**
 ```csharp
-// 2.1 DialogueEvent shows text, waits for the player to dismiss it
-public class DialogueEvent : UIEvent
-{
-    private readonly string _dialogueKey;
-    private readonly DialogueUI _ui;
+public EventAsset onPlayerHealthChangedEvent;
 
-    public DialogueEvent(string dialogueKey, DialogueUI ui, MonoBehaviour runner = null)
-        : base(runner)
-    {
-        _dialogueKey = dialogueKey;
-        _ui = ui;
-    }
+void OnEnable() {
+    EventDispatcher.Register(onPlayerHealthChangedEvent, OnHealthChanged);
+}
 
-    public override IEnumerator ProcessEvent()
-    {
-        bool done = false;
-        _ui.Show(_dialogueKey, () => done = true);
-        while (!done)
-            yield return null;
-        Complete();
-    }
+void OnDisable() {
+    EventDispatcher.Unregister(onPlayerHealthChangedEvent, OnHealthChanged);
+}
+
+void OnHealthChanged() {
+    float damage = onPlayerHealthChangedEvent.GetValue<float>("damage");
+    Debug.Log($"Player took {damage} damage!");
 }
 ```
 
+### 2. Using `EventHelper` for Advanced Scenarios
+`EventHelper` supports advanced subscription patterns, priorities, and scoped handlers.
+
+**Example 1: Subscribe with priority**
 ```csharp
-// 2.2 HighlightButtonEvent pulses a highlight on a button until clicked
-public class HighlightButtonEvent : UIEvent
-{
-    private readonly Button _button;
-    private bool _clicked;
-
-    public HighlightButtonEvent(Button button, MonoBehaviour runner = null)
-        : base(runner)
-    {
-        _button = button;
-    }
-
-    public override IEnumerator ProcessEvent()
-    {
-        // Subscribe click
-        _button.onClick.AddListener(OnClicked);
-
-        // Pulse effect
-        while (!_clicked)
-        {
-            // e.g. animate scale or color here...
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        // Cleanup
-        _button.onClick.RemoveListener(OnClicked);
-        Complete();
-    }
-
-    private void OnClicked() => _clicked = true;
-}
+EventHelper.Subscribe(onGameStartedEvent, MyHandler, EventPriority.High);
 ```
 
+**Example 2: Scoped subscription (auto-cleanup)**
 ```csharp
-// 2.3 Putting it all together
-public class TutorialExample : MonoBehaviour
-{
-    [SerializeField] private DialogueUI _dialogueUI;
-    [SerializeField] private Button   _nextButton;
+EventHelper.SubscribeScoped(this, onGameStartedEvent, MyHandler);
+```
 
-    private void Start()
-    {
-        var dialogEvt  = new DialogueEvent("welcome_message", _dialogueUI, this);
-        var highlight  = new HighlightButtonEvent(_nextButton, this);
+---
 
-        dialogEvt.NextEvent = highlight;
-        EventHelper.TriggerChainedEvent(dialogEvt);
-    }
+## Passing Data with Events
 
-    private void Update()
-    {
-        EventHelper.ProcessEvents();
-    }
+Each `EventAsset` can carry arbitrary data fields. Use `SetValue` before triggering, and `GetValue` in listeners.
+
+**Example 1: Sending data**
+```csharp
+onPlayerHealthChangedEvent.SetValue("damage", 10f);
+EventDispatcher.Raise(onPlayerHealthChangedEvent);
+```
+
+**Example 2: Receiving data**
+```csharp
+void OnHealthChanged() {
+    float damage = onPlayerHealthChangedEvent.GetValue<float>("damage");
+    Debug.Log($"Damage: {damage}");
 }
 ```
 
 ---
 
-### How It Works
+## Advanced Usage
+- **Bulk Operations**: Use multi-select and bulk assign/delete in the Event Manager window.
+- **Tag Filtering**: Filter events and categories by tags for fast navigation.
+- **Category Assignment**: Assign or reassign categories to events in bulk.
+- **Custom Data Types**: Store and retrieve complex data (Vector2, Vector3, Color, etc.) using the data fields.
+- **Editor-Only Metadata**: Use icons, colors, and descriptions for better organization.
 
-1. **Implement** `IChainedEvent` (or derive from `UIEvent`) and inside `ProcessEvent()`
+---
 
-   * Drive your UI/logic (tweens, waits, dialogues, input).
-   * Call `Complete()` when done (or `SetError(ex)` on failure).
+## Best Practices
+- Use categories and tags to keep your event system organized.
+- Prefer asset-based events for designer workflows and easy refactoring.
+- Use data fields for passing contextual information, not for large payloads.
+- Clean up event listeners in `OnDisable` or `OnDestroy` to avoid memory leaks.
 
-2. **Chain** them by setting `.NextEvent`.
+---
 
-3. **Trigger** the first with `EventHelper.TriggerChainedEvent(...)`.
+## FAQ
 
-4. **Process** in your main `Update()` via `EventHelper.ProcessEvents()`
-   — this will automatically enqueue each `NextEvent` once its predecessor reports `IsComplete`.
+**Q: Can I create events at runtime?**
+A: Yes, but runtime-created events are not persistent. For persistent events, create them as assets in the editor.
 
-With these patterns you can build arbitrarily complex, linear or branching sequences of UI and logic steps, all managed by the same event‑helper infrastructure. Let me know if you’d like more variations or troubleshooting tips!
+**Q: How do I pass custom data with an event?**
+A: Use `SetValue(key, value)` before triggering, and `GetValue<T>(key)` in your listener.
+
+**Q: Can I listen to multiple events with one listener?**
+A: Yes, add multiple `EventListener` components or register multiple events in code.
+
+**Q: How do I organize a large number of events?**
+A: Use categories, tags, and the Event Manager window's filtering/search features.
