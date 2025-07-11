@@ -1,211 +1,156 @@
-
 # UnityHelperSDK Event System
 
-A modern, designer-friendly, and scalable event system for Unity, built on ScriptableObject-based events and categories. This system enables robust event-driven workflows, advanced editor tooling, and flexible data payloads for both programmers and designers.
-
----
-
-## Table of Contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Event System Architecture](#event-system-architecture)
-- [Getting Started](#getting-started)
-- [Creating Events & Categories](#creating-events--categories)
-- [Triggering Events](#triggering-events)
-- [Listening to Events](#listening-to-events)
-- [Passing Data with Events](#passing-data-with-events)
-- [Advanced Usage](#advanced-usage)
-- [Best Practices](#best-practices)
-- [FAQ](#faq)
-
----
-
 ## Overview
-
-This event system replaces traditional C# event patterns with asset-based, ScriptableObject-driven events and categories. It is optimized for both code and designer workflows, supporting advanced filtering, tagging, and metadata.
-
----
-
-## Key Features
-- **ScriptableObject-based Events**: Events are assets, not structs or enums.
-- **Categories**: Organize events with rich metadata (color, icon, tags, description).
-- **Designer-Friendly**: Create, edit, and manage events/categories in the Unity Editor.
-- **Advanced Editor Tools**: Bulk operations, filtering, search, and details panel.
-- **Flexible Data Payloads**: Events can carry arbitrary data fields.
-- **Runtime & Editor Support**: Trigger and listen to events in both play mode and edit mode.
+The Event System in UnityHelperSDK provides a flexible, decoupled, and ScriptableObject-based event architecture for Unity projects. It enables you to define, categorize, and trigger events without tight coupling between components, and supports both code and inspector-driven workflows.
 
 ---
 
-## Event System Architecture
+## Key Components
 
-- **EventAsset**: ScriptableObject representing a single event, with metadata and data fields.
-- **CategoryAsset**: ScriptableObject representing a category for grouping events.
-- **EventDatabase**: ScriptableObject holding all events and categories for easy management.
-- **EventDispatcher**: Central static dispatcher for raising and listening to events.
-- **EventListener**: MonoBehaviour for listening to events and invoking UnityEvents.
-- **EventManagerWindow**: Editor window for managing events and categories.
-
----
-
-## Getting Started
-
-1. **Import the Event System**: Add the `EventsUtilities` folder to your project.
-2. **Create an Event Database**: In the Unity Editor, go to `Tools > UnityHelperSDK > Event Manager` and click "Create Event Database" if one does not exist.
-3. **Open the Event Manager**: Use the Event Manager window to create and manage events and categories.
+- **EventAsset**: ScriptableObject representing a single event definition. Can carry metadata, payload, and category.
+- **CategoryAsset**: ScriptableObject for organizing events into categories for better management and UI.
+- **EventDatabase**: ScriptableObject holding all event and category assets for easy management.
+- **EventDispatcher**: MonoBehaviour singleton that manages event registration and dispatching at runtime.
+- **EventListener**: MonoBehaviour for listening to EventAssets and invoking UnityEvents in response.
+- **EventHelper**: Static utility for advanced event subscription, priority, and lifetime management (optional, for advanced users).
 
 ---
 
-## Creating Events & Categories
+## Basic Usage
 
-### Creating an Event
-1. Open the Event Manager window (`Tools > UnityHelperSDK > Event Manager`).
-2. In the **Events** tab, click **Add New Event**.
-3. Fill in the event name, description, category, color, icon, and tags.
-4. (Optional) Add data fields for custom payloads.
+### 1. Define Events
+- Create new `EventAsset` and `CategoryAsset` assets via the Unity Editor (right-click in Project window > Create > UnityHelperSDK > Event Asset/Category).
+- Optionally, group events in an `EventDatabase` for easy reference.
 
-**Example 1: Simple Event**
-- Name: `OnGameStarted`
-- Description: "Fired when the game starts."
-- Category: `System`
-
-**Example 2: Event with Data**
-- Name: `OnPlayerHealthChanged`
-- Data Fields: `currentHealth` (float), `maxHealth` (float), `damage` (float)
-
-### Creating a Category
-1. In the **Categories** tab, click **Add New Category**.
-2. Set the category name, color, icon, description, and tags.
-3. Assign events to this category as needed.
-
-**Example 1: System Category**
-- Name: `System`
-- Color: Blue
-- Description: "System-level events."
-
-**Example 2: Player Category**
-- Name: `Player`
-- Color: Green
-- Description: "Player-related events."
-
----
-
-## Triggering Events
-
-You can trigger events from code using the static `EventDispatcher.Raise` or `EventHelper.Trigger` methods.
-
+### 2. Trigger Events (Code)
 ```csharp
-// Example 1: Trigger a simple event
-public EventAsset onGameStartedEvent;
+using UnityHelperSDK.Events;
 
-void Start() {
-    EventDispatcher.Raise(onGameStartedEvent);
-}
+// Reference your EventAsset (assign in inspector or load via Resources)
+public EventAsset myEvent;
 
-// Example 2: Trigger an event with data
-public EventAsset onPlayerHealthChangedEvent;
-
-void TakeDamage(float damage) {
-    onPlayerHealthChangedEvent.SetValue("damage", damage);
-    onPlayerHealthChangedEvent.SetValue("currentHealth", currentHealth);
-    onPlayerHealthChangedEvent.SetValue("maxHealth", maxHealth);
-    EventDispatcher.Raise(onPlayerHealthChangedEvent);
+// Trigger the event (e.g. when a button is clicked)
+public void OnButtonClicked() {
+    EventDispatcher.Raise(myEvent);
 }
 ```
 
----
-
-## Listening to Events
-
-You can listen to events in two main ways:
-
-### 1. Using the `EventListener` MonoBehaviour
-Attach the `EventListener` component to a GameObject and assign the `EventAsset` and a UnityEvent response.
-
-**Example 1: Listen for a simple event**
-- Add `EventListener` to a GameObject.
-- Assign `onGameStartedEvent`.
-- Add a UnityEvent response in the Inspector.
-
-**Example 2: Listen for an event in code**
+### 3. Listen for Events (Code)
 ```csharp
-public EventAsset onPlayerHealthChangedEvent;
+using UnityHelperSDK.Events;
+
+public EventAsset myEvent;
 
 void OnEnable() {
-    EventDispatcher.Register(onPlayerHealthChangedEvent, OnHealthChanged);
+    EventDispatcher.Register(myEvent, OnMyEvent);
 }
-
 void OnDisable() {
-    EventDispatcher.Unregister(onPlayerHealthChangedEvent, OnHealthChanged);
+    EventDispatcher.Unregister(myEvent, OnMyEvent);
 }
-
-void OnHealthChanged() {
-    float damage = onPlayerHealthChangedEvent.GetValue<float>("damage");
-    Debug.Log($"Player took {damage} damage!");
+void OnMyEvent() {
+    Debug.Log("Event received!");
+    // Respond to event (e.g. show UI, play sound, etc)
 }
 ```
 
-### 2. Using `EventHelper` for Advanced Scenarios
-`EventHelper` supports advanced subscription patterns, priorities, and scoped handlers.
-
-**Example 1: Subscribe with priority**
-```csharp
-EventHelper.Subscribe(onGameStartedEvent, MyHandler, EventPriority.High);
-```
-
-**Example 2: Scoped subscription (auto-cleanup)**
-```csharp
-EventHelper.SubscribeScoped(this, onGameStartedEvent, MyHandler);
-```
+### 4. Listen for Events (Inspector)
+- Add the `EventListener` component to a GameObject.
+- Assign the `EventAsset` to listen for.
+- Assign a UnityEvent response in the inspector.
 
 ---
 
-## Passing Data with Events
+## More Examples
 
-Each `EventAsset` can carry arbitrary data fields. Use `SetValue` before triggering, and `GetValue` in listeners.
-
-**Example 1: Sending data**
+### Example: UI Button triggers an event, another script listens
 ```csharp
-onPlayerHealthChangedEvent.SetValue("damage", 10f);
-EventDispatcher.Raise(onPlayerHealthChangedEvent);
-```
+// ButtonTrigger.cs
+using UnityEngine;
+using UnityHelperSDK.Events;
+public class ButtonTrigger : MonoBehaviour {
+    public EventAsset buttonClickedEvent;
+    public void OnButtonClick() {
+        EventDispatcher.Raise(buttonClickedEvent);
+    }
+}
 
-**Example 2: Receiving data**
-```csharp
-void OnHealthChanged() {
-    float damage = onPlayerHealthChangedEvent.GetValue<float>("damage");
-    Debug.Log($"Damage: {damage}");
+// ListenerScript.cs
+using UnityEngine;
+using UnityHelperSDK.Events;
+public class ListenerScript : MonoBehaviour {
+    public EventAsset buttonClickedEvent;
+    void OnEnable() {
+        EventDispatcher.Register(buttonClickedEvent, OnButtonClicked);
+    }
+    void OnDisable() {
+        EventDispatcher.Unregister(buttonClickedEvent, OnButtonClicked);
+    }
+    void OnButtonClicked() {
+        Debug.Log("Button was clicked!");
+    }
 }
 ```
+
+### Example: Analytics Event
+```csharp
+// In your gameplay code
+public EventAsset levelCompletedEvent;
+void OnLevelComplete() {
+    EventDispatcher.Raise(levelCompletedEvent);
+    // Your analytics system can listen for this event
+}
+```
+
+### Example: Debugging Event Flow
+- Add Debug.Log statements in your event listeners.
+- Use the Unity Console to verify event order and timing.
+- Use categories and tags to filter and organize events in the editor.
 
 ---
 
 ## Advanced Usage
-- **Bulk Operations**: Use multi-select and bulk assign/delete in the Event Manager window.
-- **Tag Filtering**: Filter events and categories by tags for fast navigation.
-- **Category Assignment**: Assign or reassign categories to events in bulk.
-- **Custom Data Types**: Store and retrieve complex data (Vector2, Vector3, Color, etc.) using the data fields.
-- **Editor-Only Metadata**: Use icons, colors, and descriptions for better organization.
+
+- Use `EventHelper` for scoped, prioritized, or coroutine-based event handling.
+- Use `EventDatabase` to manage and query all events and categories in your project.
+- Use `CategoryAsset` to organize events for editor tools or analytics.
 
 ---
 
 ## Best Practices
-- Use categories and tags to keep your event system organized.
-- Prefer asset-based events for designer workflows and easy refactoring.
-- Use data fields for passing contextual information, not for large payloads.
-- Clean up event listeners in `OnDisable` or `OnDestroy` to avoid memory leaks.
+- Use ScriptableObject events for decoupling systems (UI, gameplay, audio, etc).
+- Use categories for analytics, filtering, and editor tooling.
+- Use `EventListener` for quick inspector-based event wiring.
+- Use `EventHelper` for advanced scenarios (lifetime, priority, async).
 
 ---
 
-## FAQ
+## Example: Triggering a Tutorial Event
+```csharp
+// Suppose you have a TutorialStarted EventAsset
+EventDispatcher.Raise(tutorialStartedEventAsset);
+```
 
-**Q: Can I create events at runtime?**
-A: Yes, but runtime-created events are not persistent. For persistent events, create them as assets in the editor.
+## Example: Listening for a Tutorial Event
+```csharp
+EventDispatcher.Register(tutorialStartedEventAsset, OnTutorialStarted);
+void OnTutorialStarted() {
+    // Start tutorial UI, etc
+}
+```
 
-**Q: How do I pass custom data with an event?**
-A: Use `SetValue(key, value)` before triggering, and `GetValue<T>(key)` in your listener.
+---
 
-**Q: Can I listen to multiple events with one listener?**
-A: Yes, add multiple `EventListener` components or register multiple events in code.
+## Extending
+- Add custom payloads to events via the `EventAsset` data fields.
+- Extend `EventListener` for custom UnityEvent signatures.
+- Integrate with analytics or UI systems via event categories.
 
-**Q: How do I organize a large number of events?**
-A: Use categories, tags, and the Event Manager window's filtering/search features.
+---
+
+## Files
+- `EventAsset.cs`, `CategoryAsset.cs`, `EventDatabase.cs`, `EventDispatcher.cs`, `EventListener.cs`, `EventHelper.cs`, `EventTypes.cs`, `EventsRepository.cs`
+
+---
+
+## Support
+For more advanced usage, see the code comments and the `EventHelper` API.
